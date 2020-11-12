@@ -1,15 +1,14 @@
+import React from "react";
 import Head from "next/head";
-
 import styled from "styled-components";
-
-const Title = styled.h1`
-  color: red;
-`;
+import Navbar from "../components/Navbar";
+import BooksRecap from "../components/BooksRecap";
 
 export default function Home() {
   return (
     <div>
-      <Title>My First Next.js Page</Title>
+      <Navbar />
+      <BooksRecap />
     </div>
   );
 }
