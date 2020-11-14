@@ -2,33 +2,34 @@ import React from "react";
 import styled from "styled-components";
 import { Formik, Form, Field } from "formik";
 import axios from "axios";
-import { BooksRecap } from "./BooksRecap";
 import { mutate } from "swr";
 
-interface OLAPIBookResponse {
+interface OLAPISearchResponse {
   data: {
     num_found: number;
-    docs: {
-      title: string;
-      author: string[];
-      key: string;
-      cover_i: number;
-      first_publish_year: number;
-    }[];
+    docs: OLAPIBook[];
   };
+}
+
+interface OLAPIBook {
+  title: string;
+  author_name: string[];
+  key: string;
+  cover_i: number;
+  first_publish_year: number;
 }
 interface APIBooksQuery {
   title: string;
   author: string;
 }
 interface Props {
-  fetchBooks: (query: { title: string; author: string }) => Promise<OLAPIBookResponse>;
+  fetchBooks: (query: { title: string; author: string }) => Promise<OLAPISearchResponse>;
   addBook: (query: APIBooksQuery) => Promise<object>;
 }
 
 export function AddBookSearch({ fetchBooks, addBook }: Props) {
   const [searchResult, setSearchResult] = React.useState([]);
-  const [selectedBook, setSelectedBook] = React.useState();
+  const [selectedBook, setSelectedBook] = React.useState<OLAPIBook>();
 
   const initialValues = { title: "", author: "" };
 
@@ -70,11 +71,11 @@ export function AddBookSearch({ fetchBooks, addBook }: Props) {
       {(props) => (
         <Form>
           <FieldGroup>
-            <label>Title</label>
+            <label htmlFor="title">Title</label>
             <Field type="text" name="title" />
           </FieldGroup>
           <FieldGroup>
-            <label>Author</label>
+            <label htmlFor="author">Author</label>
             <Field type="text" name="author" />
           </FieldGroup>
 

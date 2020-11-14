@@ -32,11 +32,11 @@ export function AddBook({ fetchBooks }: Props) {
           {(props) => (
             <Form>
               <FieldGroup>
-                <label>Title</label>
+                <label htmlFor="title">Title</label>
                 <Field type="text" name="title" />
               </FieldGroup>
               <FieldGroup>
-                <label>Author</label>
+                <label htmlFor="author">Author</label>
                 <Field type="text" name="author" />
               </FieldGroup>
 

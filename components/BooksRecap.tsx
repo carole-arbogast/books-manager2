@@ -43,7 +43,7 @@ export function BooksRecap({ fetchBooks }: Props) {
             <Group>
               {books &&
                 books.map((book) => (
-                  <Card title={book.title} author={book.author} rating={10}></Card>
+                  <Card key={book._id} title={book.title} author={book.author} rating={10}></Card>
                 ))}
             </Group>
           )}
