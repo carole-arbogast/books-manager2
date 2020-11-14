@@ -65,7 +65,6 @@ function AddBookContainer(props: Omit<Props, "fetchBooks">) {
   const fetchBooks = async (query: { title: string; author: string }) => {
     const title = query.title.split(" ").join("+");
     const author = query.author.split(" ").join("+");
-    console.log(title, author);
     return await axios.get(`http://openlibrary.org/search.json?title=${title}&author=${author}`);
   };
   return <AddBook fetchBooks={fetchBooks} {...props} />;

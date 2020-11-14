@@ -3,9 +3,27 @@ import styled from "styled-components";
 import Card from "./Card";
 import BoxModal from "./BoxModal";
 import AddBook from "./AddBook";
+import Axios from "axios";
+import useSWR from "swr";
 
-export function BooksRecap() {
+interface APIBooksResponse {
+  data: {
+    _id: number;
+    title: string;
+    author: string;
+  }[];
+}
+interface Props {
+  fetchBooks: () => Promise<APIBooksResponse>;
+}
+
+export function BooksRecap({ fetchBooks }: Props) {
   const [modalOpen, setModalOpen] = React.useState(false);
+  const { data, error } = useSWR("/books", fetchBooks);
+
+  const books = data?.data;
+
+  const loading = !data && !error;
 
   return (
     <Container>
@@ -19,7 +37,18 @@ export function BooksRecap() {
         <Button onClick={() => setModalOpen(true)}>Add book</Button>
         <div>
           <h2>Recent</h2>
-          <Group>
+          {loading ? (
+            <div>LOADING </div>
+          ) : (
+            <Group>
+              {books &&
+                books.map((book) => (
+                  <Card title={book.title} author={book.author} rating={10}></Card>
+                ))}
+            </Group>
+          )}
+
+          {/* <Group>
             <Card title="Harry Potter and the Deathly Hallows" author="J.K.Rowling" rating={10} />
             <Card title="Harry Potter and the Deathly Hallows" author="J.K.Rowling" rating={10} />
             <Card title="Harry Potter and the Deathly Hallows" author="J.K.Rowling" rating={10} />
@@ -36,7 +65,7 @@ export function BooksRecap() {
           <h2>Bookshelf B</h2>
           <Group>
             <div>No books here yet</div>
-          </Group>
+          </Group> */}
         </div>
       </Content>
     </Container>
@@ -66,4 +95,9 @@ const Group = styled.div`
   flex-wrap: wrap;
 `;
 
-export default BooksRecap;
+function BooksRecapContainer(props: Omit<Props, "fetchBooks">) {
+  const fetchBooks = async () => await Axios.get("http://localhost:8000/books");
+  return <BooksRecap fetchBooks={fetchBooks} {...props} />;
+}
+
+export default BooksRecapContainer;

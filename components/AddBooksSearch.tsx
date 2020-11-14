@@ -2,12 +2,33 @@ import React from "react";
 import styled from "styled-components";
 import { Formik, Form, Field } from "formik";
 import axios from "axios";
+import { BooksRecap } from "./BooksRecap";
+import { mutate } from "swr";
+
+interface OLAPIBookResponse {
+  data: {
+    num_found: number;
+    docs: {
+      title: string;
+      author: string[];
+      key: string;
+      cover_i: number;
+      first_publish_year: number;
+    }[];
+  };
+}
+interface APIBooksQuery {
+  title: string;
+  author: string;
+}
 interface Props {
-  fetchBooks: (query: { title: string; author: string }) => Promise<object>;
+  fetchBooks: (query: { title: string; author: string }) => Promise<OLAPIBookResponse>;
+  addBook: (query: APIBooksQuery) => Promise<object>;
 }
 
-export function AddBookSearch({ fetchBooks }: Props) {
+export function AddBookSearch({ fetchBooks, addBook }: Props) {
   const [searchResult, setSearchResult] = React.useState([]);
+  const [selectedBook, setSelectedBook] = React.useState();
 
   const initialValues = { title: "", author: "" };
 
@@ -17,12 +38,33 @@ export function AddBookSearch({ fetchBooks }: Props) {
     setSearchResult(books);
   };
 
+  const handleAddBook = async () => {
+    if (selectedBook) {
+      const addedBook = await addBook({
+        title: selectedBook.title,
+        author: selectedBook.author_name[0],
+      });
+      mutate("/books");
+      return addedBook;
+    }
+  };
+
   return searchResult.length > 0 ? (
-    <SearchResults>
-      {searchResult.map((book) => (
-        <SearchResultItem key={book.title}>{book.title} </SearchResultItem>
-      ))}
-    </SearchResults>
+    <>
+      <SearchResults>
+        {searchResult.map((book) => (
+          <SearchResultItem
+            disabled={Boolean(selectedBook)}
+            selected={selectedBook && selectedBook.title === book.title}
+            key={book.title}
+            onClick={() => setSelectedBook(book)}
+          >
+            {book.title}
+          </SearchResultItem>
+        ))}
+      </SearchResults>
+      <button onClick={handleAddBook}>ADD</button>
+    </>
   ) : (
     <Formik initialValues={initialValues} onSubmit={handleSubmitSearch}>
       {(props) => (
@@ -66,14 +108,17 @@ const SearchResultItem = styled.div<{ selected?: boolean }>`
   }
 `;
 
-function AddBookSearchContainer(props: Omit<Props, "fetchBooks">) {
+function AddBookSearchContainer(props: Omit<Props, "fetchBooks" | "addBook">) {
   const fetchBooks = async (query: { title: string; author: string }) => {
     const title = query.title.split(" ").join("+");
     const author = query.author.split(" ").join("+");
-    console.log(title, author);
     return await axios.get(`http://openlibrary.org/search.json?title=${title}&author=${author}`);
   };
-  return <AddBookSearch fetchBooks={fetchBooks} {...props} />;
+
+  const addBook = async (query: APIBooksQuery) => {
+    return await axios.post("http://localhost:8000/books/", query);
+  };
+  return <AddBookSearch fetchBooks={fetchBooks} addBook={addBook} {...props} />;
 }
 
 export default AddBookSearchContainer;
