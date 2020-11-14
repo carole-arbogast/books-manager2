@@ -11,8 +11,10 @@ interface APIBooksResponse {
     _id: number;
     title: string;
     author: string;
+    cover: number;
   }[];
 }
+
 interface Props {
   fetchBooks: () => Promise<APIBooksResponse>;
 }
@@ -43,7 +45,13 @@ export function BooksRecap({ fetchBooks }: Props) {
             <Group>
               {books &&
                 books.map((book) => (
-                  <Card key={book._id} title={book.title} author={book.author} rating={10}></Card>
+                  <Card
+                    key={book._id}
+                    title={book.title}
+                    author={book.author}
+                    cover={`http://covers.openlibrary.org/b/id/${book.cover}-S.jpg`}
+                    rating={10}
+                  ></Card>
                 ))}
             </Group>
           )}
@@ -95,7 +103,7 @@ const Group = styled.div`
   flex-wrap: wrap;
 `;
 
-function BooksRecapContainer(props: Omit<Props, "fetchBooks">) {
+function BooksRecapContainer(props: Omit<Props, "fetchBooks" | "fetchBookCover">) {
   const fetchBooks = async () => await Axios.get("http://localhost:8000/books");
   return <BooksRecap fetchBooks={fetchBooks} {...props} />;
 }

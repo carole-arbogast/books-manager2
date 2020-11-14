@@ -21,6 +21,8 @@ interface OLAPIBook {
 interface APIBooksQuery {
   title: string;
   author: string;
+  cover: number;
+  description: string;
 }
 interface Props {
   fetchBooks: (query: { title: string; author: string }) => Promise<OLAPISearchResponse>;
@@ -28,15 +30,18 @@ interface Props {
 }
 
 export function AddBookSearch({ fetchBooks, addBook }: Props) {
-  const [searchResult, setSearchResult] = React.useState([]);
+  const [searchResult, setSearchResult] = React.useState<OLAPIBook[]>([]);
   const [selectedBook, setSelectedBook] = React.useState<OLAPIBook>();
+  const [loading, setLoading] = React.useState(false);
 
   const initialValues = { title: "", author: "" };
 
   const handleSubmitSearch = async (values) => {
+    setLoading(true);
     const res = await fetchBooks({ title: values.title, author: values.author });
     const books = res.data.docs.slice(0, 10);
     setSearchResult(books);
+    setLoading(false);
   };
 
   const handleAddBook = async () => {
@@ -44,13 +49,17 @@ export function AddBookSearch({ fetchBooks, addBook }: Props) {
       const addedBook = await addBook({
         title: selectedBook.title,
         author: selectedBook.author_name[0],
+        cover: selectedBook.cover_i,
+        description: "description",
       });
       mutate("/books");
       return addedBook;
     }
   };
 
-  return searchResult.length > 0 ? (
+  return loading ? (
+    <div>LOADING</div>
+  ) : searchResult.length > 0 ? (
     <>
       <SearchResults>
         {searchResult.map((book) => (
@@ -60,6 +69,7 @@ export function AddBookSearch({ fetchBooks, addBook }: Props) {
             key={book.title}
             onClick={() => setSelectedBook(book)}
           >
+            <img src={`http://covers.openlibrary.org/b/id/${book.cover_i}-S.jpg`} alt="" />
             {book.title}
           </SearchResultItem>
         ))}
