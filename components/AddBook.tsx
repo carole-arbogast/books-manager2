@@ -1,8 +1,14 @@
 import React from "react";
 import styled from "styled-components";
 import { Formik, Form, Field } from "formik";
+import axios from "axios";
+import AddBookSearch from "./AddBooksSearch";
 
-export function AddBook() {
+interface Props {
+  fetchBooks: (query: { title: string; author: string }) => Promise<object>;
+}
+
+export function AddBook({ fetchBooks }: Props) {
   const [manualAdd, setManualAdd] = React.useState(false);
 
   const handleSubmit = (values) => {
@@ -11,19 +17,15 @@ export function AddBook() {
 
   const initialValues = { title: "", author: "" };
 
-  const options = [
-    { name: "Swedish", value: "sv" },
-    { name: "English", value: "en" },
-    {
-      type: "group",
-      name: "Group name",
-      items: [{ name: "Spanish", value: "es" }],
-    },
-  ];
-
   return (
-    <div>
+    <Wrapper>
       <h3>Add Book</h3>
+
+      {manualAdd ? (
+        <button onClick={() => setManualAdd(false)}>Search Books</button>
+      ) : (
+        <button onClick={() => setManualAdd(true)}>Manual Add</button>
+      )}
 
       {manualAdd ? (
         <Formik initialValues={initialValues} onSubmit={handleSubmit}>
@@ -43,11 +45,15 @@ export function AddBook() {
           )}
         </Formik>
       ) : (
-        <div></div>
+        <AddBookSearch />
       )}
-    </div>
+    </Wrapper>
   );
 }
+
+const Wrapper = styled.div`
+  width: 25em;
+`;
 
 const FieldGroup = styled.div`
   display: flex;
@@ -55,4 +61,14 @@ const FieldGroup = styled.div`
   margin: 0.5rem 0;
 `;
 
-export default AddBook;
+function AddBookContainer(props: Omit<Props, "fetchBooks">) {
+  const fetchBooks = async (query: { title: string; author: string }) => {
+    const title = query.title.split(" ").join("+");
+    const author = query.author.split(" ").join("+");
+    console.log(title, author);
+    return await axios.get(`http://openlibrary.org/search.json?title=${title}&author=${author}`);
+  };
+  return <AddBook fetchBooks={fetchBooks} {...props} />;
+}
+
+export default AddBookContainer;
