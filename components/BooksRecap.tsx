@@ -8,18 +8,22 @@ import useSWR from "swr";
 
 interface APIBooksResponse {
   data: {
-    _id: number;
+    id: number;
     title: string;
     author: string;
     cover: number;
+    reading_status: string;
+    bookshelves: string[];
+    rating?: number;
   }[];
 }
 
 interface Props {
   fetchBooks: () => Promise<APIBooksResponse>;
+  fetchBookshelves: () => Promise<object>;
 }
 
-export function BooksRecap({ fetchBooks }: Props) {
+export function BooksRecap({ fetchBooks, fetchBookshelves }: Props) {
   const [modalOpen, setModalOpen] = React.useState(false);
   const { data, error } = useSWR("/books", fetchBooks);
 
@@ -31,7 +35,7 @@ export function BooksRecap({ fetchBooks }: Props) {
     <Container>
       {modalOpen && (
         <BoxModal open={modalOpen} onClose={() => setModalOpen(false)}>
-          <AddBook />
+          <AddBook onClose={() => setModalOpen(false)} />
         </BoxModal>
       )}
       <Content>
@@ -42,38 +46,22 @@ export function BooksRecap({ fetchBooks }: Props) {
           {loading ? (
             <div>LOADING </div>
           ) : (
-            <Group>
-              {books &&
-                books.map((book) => (
-                  <Card
-                    key={book._id}
-                    title={book.title}
-                    author={book.author}
-                    cover={`http://covers.openlibrary.org/b/id/${book.cover}-S.jpg`}
-                    rating={10}
-                  ></Card>
-                ))}
-            </Group>
+            <>
+              <Group>
+                {books &&
+                  books.map((book) => (
+                    <Card
+                      key={book.id}
+                      title={book.title}
+                      author={book.author}
+                      cover={`http://covers.openlibrary.org/b/id/${book.cover}-S.jpg`}
+                      rating={book.rating}
+                      readingStatus={book.reading_status}
+                    ></Card>
+                  ))}
+              </Group>
+            </>
           )}
-
-          {/* <Group>
-            <Card title="Harry Potter and the Deathly Hallows" author="J.K.Rowling" rating={10} />
-            <Card title="Harry Potter and the Deathly Hallows" author="J.K.Rowling" rating={10} />
-            <Card title="Harry Potter and the Deathly Hallows" author="J.K.Rowling" rating={10} />
-          </Group>
-          <h2>Bookshelf A</h2>
-          <Group>
-            <Card title="Harry Potter and the Deathly Hallows" author="J.K.Rowling" rating={10} />
-            <Card title="Harry Potter and the Deathly Hallows" author="J.K.Rowling" rating={10} />
-          </Group>
-          <h2>Bookshelf B</h2>
-          <Group>
-            <Card title="Harry Potter and the Deathly Hallows" author="J.K.Rowling" rating={10} />
-          </Group>
-          <h2>Bookshelf B</h2>
-          <Group>
-            <div>No books here yet</div>
-          </Group> */}
         </div>
       </Content>
     </Container>
@@ -105,7 +93,8 @@ const Group = styled.div`
 
 function BooksRecapContainer(props: Omit<Props, "fetchBooks" | "fetchBookCover">) {
   const fetchBooks = async () => await Axios.get("http://localhost:8000/books");
-  return <BooksRecap fetchBooks={fetchBooks} {...props} />;
+  const fetchBookshelves = async () => await Axios.get("http://localhost:8000/bookshelves");
+  return <BooksRecap fetchBooks={fetchBooks} fetchBookshelves={fetchBookshelves} {...props} />;
 }
 
 export default BooksRecapContainer;

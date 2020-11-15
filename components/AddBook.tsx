@@ -1,64 +1,24 @@
 import React from "react";
 import styled from "styled-components";
-import { Formik, Form, Field } from "formik";
 import axios from "axios";
 import AddBookSearch from "./AddBooksSearch";
 
 interface Props {
-  fetchBooks: (query: { title: string; author: string }) => Promise<object>;
+  onClose: () => void;
 }
 
-export function AddBook({ fetchBooks }: Props) {
-  const [manualAdd, setManualAdd] = React.useState(false);
-
-  const handleSubmit = (values) => {
-    console.log(values);
-  };
-
-  const initialValues = { title: "", author: "" };
-
+export function AddBook({ onClose }: Props) {
   return (
     <Wrapper>
-      <h3>Add Book</h3>
-
-      {manualAdd ? (
-        <button onClick={() => setManualAdd(false)}>Search Books</button>
-      ) : (
-        <button onClick={() => setManualAdd(true)}>Manual Add</button>
-      )}
-
-      {manualAdd ? (
-        <Formik initialValues={initialValues} onSubmit={handleSubmit}>
-          {(props) => (
-            <Form>
-              <FieldGroup>
-                <label htmlFor="title">Title</label>
-                <Field type="text" name="title" />
-              </FieldGroup>
-              <FieldGroup>
-                <label htmlFor="author">Author</label>
-                <Field type="text" name="author" />
-              </FieldGroup>
-
-              <button type="submit">Submit</button>
-            </Form>
-          )}
-        </Formik>
-      ) : (
-        <AddBookSearch />
-      )}
+      <h2>Add a Book to your collection</h2>
+      <p>Search for a book</p>
+      <AddBookSearch onClose={onClose} />
     </Wrapper>
   );
 }
 
 const Wrapper = styled.div`
   width: 25em;
-`;
-
-const FieldGroup = styled.div`
-  display: flex;
-  flex-direction: column;
-  margin: 0.5rem 0;
 `;
 
 function AddBookContainer(props: Omit<Props, "fetchBooks">) {

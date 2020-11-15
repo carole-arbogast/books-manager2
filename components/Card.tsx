@@ -4,22 +4,24 @@ import styled from "styled-components";
 interface Props {
   title: string;
   author: string;
-  rating: number;
+  rating?: number;
   cover?: string;
+  readingStatus: string;
 }
 
-export function Card({ title, author, rating, cover }: Props) {
+export function Card({ title, author, rating, cover, readingStatus }: Props) {
   return (
     <CardWrapper>
       <Info>
         <div>{title}</div>
         <div>Author: {author}</div>
-        <div>Your rating: {rating}/10</div>
+        {rating && <div>Your rating: {rating}/10</div>}
       </Info>
       <Cover
         src={cover || "https://images-na.ssl-images-amazon.com/images/I/914CT7iyyvL.jpg"}
         placeholder="book-cover"
       ></Cover>
+      {readingStatus}
     </CardWrapper>
   );
 }

@@ -2,7 +2,7 @@ import React from "react";
 import styled from "styled-components";
 import { Formik, Form, Field } from "formik";
 import axios from "axios";
-import { mutate } from "swr";
+import useSWR, { mutate } from "swr";
 
 interface OLAPISearchResponse {
   data: {
@@ -23,77 +23,153 @@ interface APIBooksQuery {
   author: string;
   cover: number;
   description: string;
+  reading_status: string;
+  rating?: number;
+  bookshelves: string[];
+}
+
+interface APIBookshelvesResponse {
+  data: {
+    name: string;
+    id: string;
+  }[];
 }
 interface Props {
   fetchBooks: (query: { title: string; author: string }) => Promise<OLAPISearchResponse>;
+  fetchBookShelves: () => Promise<APIBookshelvesResponse>;
   addBook: (query: APIBooksQuery) => Promise<object>;
+  onClose: () => void;
 }
 
-export function AddBookSearch({ fetchBooks, addBook }: Props) {
+export function AddBookSearch({ fetchBooks, addBook, onClose, fetchBookShelves }: Props) {
   const [searchResult, setSearchResult] = React.useState<OLAPIBook[]>([]);
   const [selectedBook, setSelectedBook] = React.useState<OLAPIBook>();
-  const [loading, setLoading] = React.useState(false);
+  const [currentStep, setCurrentStep] = React.useState<
+    "loading" | "form" | "searchResults" | "final"
+  >("form");
+
+  const { data: bookshelves, error } = useSWR("/bookshelves", fetchBookShelves);
 
   const initialValues = { title: "", author: "" };
 
+  const initialValuesRating = bookshelves && {
+    readingStatus: "TO_READ",
+    rating: 0,
+    bookshelf: bookshelves.data[0].id,
+  };
+
   const handleSubmitSearch = async (values) => {
-    setLoading(true);
+    setCurrentStep("loading");
     const res = await fetchBooks({ title: values.title, author: values.author });
     const books = res.data.docs.slice(0, 10);
     setSearchResult(books);
-    setLoading(false);
+    setCurrentStep("searchResults");
   };
 
-  const handleAddBook = async () => {
+  const handleAddBook = async (values) => {
+    console.log(values.bookshelf);
     if (selectedBook) {
       const addedBook = await addBook({
         title: selectedBook.title,
         author: selectedBook.author_name[0],
         cover: selectedBook.cover_i,
         description: "description",
+        reading_status: values.readingStatus,
+        rating: values.rating,
+        bookshelves: [values.bookshelf],
       });
       mutate("/books");
+      onClose();
       return addedBook;
     }
   };
 
-  return loading ? (
-    <div>LOADING</div>
-  ) : searchResult.length > 0 ? (
-    <>
-      <SearchResults>
-        {searchResult.map((book) => (
-          <SearchResultItem
-            disabled={Boolean(selectedBook)}
-            selected={selectedBook && selectedBook.title === book.title}
-            key={book.title}
-            onClick={() => setSelectedBook(book)}
-          >
-            <img src={`http://covers.openlibrary.org/b/id/${book.cover_i}-S.jpg`} alt="" />
-            {book.title}
-          </SearchResultItem>
-        ))}
-      </SearchResults>
-      <button onClick={handleAddBook}>ADD</button>
-    </>
-  ) : (
-    <Formik initialValues={initialValues} onSubmit={handleSubmitSearch}>
-      {(props) => (
-        <Form>
-          <FieldGroup>
-            <label htmlFor="title">Title</label>
-            <Field type="text" name="title" />
-          </FieldGroup>
-          <FieldGroup>
-            <label htmlFor="author">Author</label>
-            <Field type="text" name="author" />
-          </FieldGroup>
+  const handleSubmitAddBook = async (values) => {
+    await handleAddBook(values);
+  };
 
-          <button type="submit">Search</button>
-        </Form>
-      )}
-    </Formik>
-  );
+  return {
+    loading: <div>LOADIG</div>,
+    form: (
+      <Formik initialValues={initialValues} onSubmit={handleSubmitSearch}>
+        {(props) => (
+          <Form>
+            <FieldGroup>
+              <label htmlFor="title">Title</label>
+              <Field type="text" name="title" />
+            </FieldGroup>
+            <FieldGroup>
+              <label htmlFor="author">Author</label>
+              <Field type="text" name="author" />
+            </FieldGroup>
+
+            <button type="submit">Search</button>
+          </Form>
+        )}
+      </Formik>
+    ),
+    searchResults:
+      searchResult.length > 0 ? (
+        <>
+          <SearchResults>
+            {searchResult.map((book) => (
+              <SearchResultItem
+                disabled={Boolean(selectedBook)}
+                selected={selectedBook && selectedBook.key === book.key}
+                key={book.key}
+                onClick={() => setSelectedBook(book)}
+              >
+                <img src={`http://covers.openlibrary.org/b/id/${book.cover_i}-S.jpg`} alt="" />
+                {book.title}
+                <em>{book.author_name?.[0]}</em>
+              </SearchResultItem>
+            ))}
+          </SearchResults>
+          <button onClick={() => setCurrentStep("final")}>NEXT</button>
+        </>
+      ) : (
+        <div>
+          No results <button onClick={() => setCurrentStep("form")}>Back</button>
+        </div>
+      ),
+    final: (
+      <Formik initialValues={initialValuesRating} onSubmit={handleSubmitAddBook}>
+        {({ values }) => (
+          console.log(values.bookshelf),
+          (
+            <Form>
+              <FieldGroup>
+                <label htmlFor="readingStatus">Status</label>
+                <Field as="select" name="readingStatus">
+                  <option value="READ">Read</option>
+                  <option value="READING">Reading</option>
+                  <option value="TO_READ">To Read</option>
+                </Field>
+              </FieldGroup>
+              {values.readingStatus === "READ" && (
+                <FieldGroup>
+                  <label htmlFor="rating">Your rating</label>
+                  <Field type="number" name="rating" />
+                </FieldGroup>
+              )}
+              <label htmlFor="rating">Your rating</label>
+              <FieldGroup>
+                <Field as="select" name="bookshelf">
+                  {bookshelves.data.map((bookshelf) => (
+                    <option value={bookshelf.id} key={bookshelf.id}>
+                      {bookshelf.name}
+                    </option>
+                  ))}
+                </Field>
+              </FieldGroup>
+
+              <button type="submit">ADD</button>
+            </Form>
+          )
+        )}
+      </Formik>
+    ),
+  }[currentStep];
 }
 
 const FieldGroup = styled.div`
@@ -119,17 +195,29 @@ const SearchResultItem = styled.div<{ selected?: boolean }>`
   }
 `;
 
-function AddBookSearchContainer(props: Omit<Props, "fetchBooks" | "addBook">) {
+function AddBookSearchContainer(props: Omit<Props, "fetchBooks" | "fetchBookShelves" | "addBook">) {
   const fetchBooks = async (query: { title: string; author: string }) => {
     const title = query.title.split(" ").join("+");
     const author = query.author.split(" ").join("+");
     return await axios.get(`http://openlibrary.org/search.json?title=${title}&author=${author}`);
   };
 
+  const fetchBookShelves = async () => {
+    return await axios.get("http://localhost:8000/bookshelves");
+  };
+
   const addBook = async (query: APIBooksQuery) => {
     return await axios.post("http://localhost:8000/books/", query);
   };
-  return <AddBookSearch fetchBooks={fetchBooks} addBook={addBook} {...props} />;
+
+  return (
+    <AddBookSearch
+      fetchBooks={fetchBooks}
+      fetchBookShelves={fetchBookShelves}
+      addBook={addBook}
+      {...props}
+    />
+  );
 }
 
 export default AddBookSearchContainer;
