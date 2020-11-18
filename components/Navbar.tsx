@@ -19,7 +19,9 @@ export function Navbar() {
   return (
     <NavbarWrapper>
       <NavbarContent>
-        <div>BOOKS MANAGER</div>
+        <div>
+          <a href="/">BOOKS MANAGER</a>
+        </div>
       </NavbarContent>
     </NavbarWrapper>
   );

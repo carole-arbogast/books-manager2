@@ -4,7 +4,8 @@ import Card from "./Card";
 import BoxModal from "./BoxModal";
 import AddBook from "./AddBook";
 import Axios from "axios";
-import useSWR from "swr";
+import useSWR, { mutate } from "swr";
+import AddBookshelf from "./AddBookshelf";
 
 interface APIBooksResponse {
   data: {
@@ -18,48 +19,84 @@ interface APIBooksResponse {
   }[];
 }
 
-interface Props {
-  fetchBooks: () => Promise<APIBooksResponse>;
-  fetchBookshelves: () => Promise<object>;
-}
+const populateBookshelves = async (bookshelves: { id: number; name: string }[]) => {
+  try {
+    const res = await Promise.all(
+      bookshelves.map(async (bookshelf) => {
+        const books = await Axios.get(`http://localhost:8000/books?bookshelf=${bookshelf.id}`);
+        return { books: books.data, name: bookshelf.name, id: bookshelf.id };
+      })
+    );
+    return res;
+  } catch (err) {
+    console.log(err);
+  }
+};
+const fetchBookshelves = async () => await Axios.get("http://localhost:8000/bookshelves");
+const deleteBookshelf = async (id: number) =>
+  await Axios.delete(`http://localhost:8000/bookshelves/${id}/`);
 
-export function BooksRecap({ fetchBooks, fetchBookshelves }: Props) {
-  const [modalOpen, setModalOpen] = React.useState(false);
-  const { data, error } = useSWR("/books", fetchBooks);
+export function BooksRecap() {
+  const [currentModal, setCurrentModal] = React.useState<"" | "addBook" | "addBookshelf">("");
+  const { data: bookshelves, error: bookshelvesError } = useSWR("/bookshelves", fetchBookshelves);
+  const bookshelvesList = bookshelves?.data.map((bookshelf) => ({
+    id: bookshelf.id,
+    name: bookshelf.name,
+  }));
 
-  const books = data?.data;
+  const { data: populatedBookshelves, error: booksError } = useSWR(
+    bookshelvesList ? "/books" : null,
+    () => populateBookshelves(bookshelvesList)
+  );
 
-  const loading = !data && !error;
+  const loading = !populatedBookshelves && !booksError && !bookshelvesError;
 
   return (
     <Container>
-      {modalOpen && (
-        <BoxModal open={modalOpen} onClose={() => setModalOpen(false)}>
-          <AddBook onClose={() => setModalOpen(false)} />
+      {currentModal && (
+        <BoxModal open={Boolean(currentModal)} onClose={() => setCurrentModal("")}>
+          {currentModal === "addBook" && <AddBook onClose={() => setCurrentModal("")} />}
+          {currentModal === "addBookshelf" && <AddBookshelf onClose={() => setCurrentModal("")} />}
         </BoxModal>
       )}
       <Content>
         <Title>Your books</Title>
-        <Button onClick={() => setModalOpen(true)}>Add book</Button>
+        <Button onClick={() => setCurrentModal("addBook")}>Add book</Button>
+        <Button onClick={() => setCurrentModal("addBookshelf")}>Add Bookshelf</Button>
         <div>
           <h2>Recent</h2>
           {loading ? (
             <div>LOADING </div>
           ) : (
             <>
-              <Group>
-                {books &&
-                  books.map((book) => (
-                    <Card
-                      key={book.id}
-                      title={book.title}
-                      author={book.author}
-                      cover={`http://covers.openlibrary.org/b/id/${book.cover}-S.jpg`}
-                      rating={book.rating}
-                      readingStatus={book.reading_status}
-                    ></Card>
+              {populatedBookshelves.map((bookshelf) => (
+                <div key={bookshelf.id}>
+                  <h2>
+                    {bookshelf.name}{" "}
+                    <button
+                      onClick={() => {
+                        deleteBookshelf(bookshelf.id);
+                        mutate("/bookshelves");
+                      }}
+                    >
+                      DELETE
+                    </button>
+                  </h2>
+                  {bookshelf.books.map((book) => (
+                    <Group key={book.id}>
+                      <Card
+                        key={book.id}
+                        id={book.id}
+                        title={book.title}
+                        author={book.author}
+                        cover={`http://covers.openlibrary.org/b/id/${book.cover}-S.jpg`}
+                        rating={book.rating}
+                        readingStatus={book.reading_status}
+                      ></Card>{" "}
+                    </Group>
                   ))}
-              </Group>
+                </div>
+              ))}
             </>
           )}
         </div>
@@ -91,10 +128,4 @@ const Group = styled.div`
   flex-wrap: wrap;
 `;
 
-function BooksRecapContainer(props: Omit<Props, "fetchBooks" | "fetchBookCover">) {
-  const fetchBooks = async () => await Axios.get("http://localhost:8000/books");
-  const fetchBookshelves = async () => await Axios.get("http://localhost:8000/bookshelves");
-  return <BooksRecap fetchBooks={fetchBooks} fetchBookshelves={fetchBookshelves} {...props} />;
-}
-
-export default BooksRecapContainer;
+export default BooksRecap;

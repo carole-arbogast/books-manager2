@@ -1,5 +1,6 @@
 import React from "react";
 import styled from "styled-components";
+import Link from "next/link";
 
 interface Props {
   title: string;
@@ -7,13 +8,16 @@ interface Props {
   rating?: number;
   cover?: string;
   readingStatus: string;
+  id: number;
 }
 
-export function Card({ title, author, rating, cover, readingStatus }: Props) {
+export function Card({ title, author, rating, cover, readingStatus, id }: Props) {
   return (
     <CardWrapper>
       <Info>
-        <div>{title}</div>
+        <div>
+          <Link href={`/books/${encodeURIComponent(id)}`}>{title}</Link>
+        </div>
         <div>Author: {author}</div>
         {rating && <div>Your rating: {rating}/10</div>}
       </Info>

@@ -25,7 +25,7 @@ interface APIBooksQuery {
   description: string;
   reading_status: string;
   rating?: number;
-  bookshelves: string[];
+  bookshelf: string[];
 }
 
 interface APIBookshelvesResponse {
@@ -35,13 +35,24 @@ interface APIBookshelvesResponse {
   }[];
 }
 interface Props {
-  fetchBooks: (query: { title: string; author: string }) => Promise<OLAPISearchResponse>;
-  fetchBookShelves: () => Promise<APIBookshelvesResponse>;
-  addBook: (query: APIBooksQuery) => Promise<object>;
   onClose: () => void;
 }
 
-export function AddBookSearch({ fetchBooks, addBook, onClose, fetchBookShelves }: Props) {
+const fetchBooks = async (query: { title: string; author: string }) => {
+  const title = query.title.split(" ").join("+");
+  const author = query.author.split(" ").join("+");
+  return await axios.get(`http://openlibrary.org/search.json?title=${title}&author=${author}`);
+};
+
+const fetchBookShelves = async () => {
+  return await axios.get("http://localhost:8000/bookshelves");
+};
+
+const addBook = async (query: APIBooksQuery) => {
+  return await axios.post("http://localhost:8000/books/", query);
+};
+
+export function AddBookSearch({ onClose }: Props) {
   const [searchResult, setSearchResult] = React.useState<OLAPIBook[]>([]);
   const [selectedBook, setSelectedBook] = React.useState<OLAPIBook>();
   const [currentStep, setCurrentStep] = React.useState<
@@ -67,7 +78,6 @@ export function AddBookSearch({ fetchBooks, addBook, onClose, fetchBookShelves }
   };
 
   const handleAddBook = async (values) => {
-    console.log(values.bookshelf);
     if (selectedBook) {
       const addedBook = await addBook({
         title: selectedBook.title,
@@ -76,7 +86,7 @@ export function AddBookSearch({ fetchBooks, addBook, onClose, fetchBookShelves }
         description: "description",
         reading_status: values.readingStatus,
         rating: values.rating,
-        bookshelves: [values.bookshelf],
+        bookshelf: values.bookshelf,
       });
       mutate("/books");
       onClose();
@@ -135,37 +145,34 @@ export function AddBookSearch({ fetchBooks, addBook, onClose, fetchBookShelves }
     final: (
       <Formik initialValues={initialValuesRating} onSubmit={handleSubmitAddBook}>
         {({ values }) => (
-          console.log(values.bookshelf),
-          (
-            <Form>
+          <Form>
+            <FieldGroup>
+              <label htmlFor="readingStatus">Status</label>
+              <Field as="select" name="readingStatus">
+                <option value="READ">Read</option>
+                <option value="READING">Reading</option>
+                <option value="TO_READ">To Read</option>
+              </Field>
+            </FieldGroup>
+            {values.readingStatus === "READ" && (
               <FieldGroup>
-                <label htmlFor="readingStatus">Status</label>
-                <Field as="select" name="readingStatus">
-                  <option value="READ">Read</option>
-                  <option value="READING">Reading</option>
-                  <option value="TO_READ">To Read</option>
-                </Field>
+                <label htmlFor="rating">Your rating</label>
+                <Field type="number" name="rating" />
               </FieldGroup>
-              {values.readingStatus === "READ" && (
-                <FieldGroup>
-                  <label htmlFor="rating">Your rating</label>
-                  <Field type="number" name="rating" />
-                </FieldGroup>
-              )}
-              <label htmlFor="rating">Your rating</label>
-              <FieldGroup>
-                <Field as="select" name="bookshelf">
-                  {bookshelves.data.map((bookshelf) => (
-                    <option value={bookshelf.id} key={bookshelf.id}>
-                      {bookshelf.name}
-                    </option>
-                  ))}
-                </Field>
-              </FieldGroup>
+            )}
+            <label htmlFor="rating">Your rating</label>
+            <FieldGroup>
+              <Field as="select" name="bookshelf">
+                {bookshelves.data.map((bookshelf) => (
+                  <option value={bookshelf.name} key={bookshelf.id}>
+                    {bookshelf.name}
+                  </option>
+                ))}
+              </Field>
+            </FieldGroup>
 
-              <button type="submit">ADD</button>
-            </Form>
-          )
+            <button type="submit">ADD</button>
+          </Form>
         )}
       </Formik>
     ),
@@ -195,29 +202,4 @@ const SearchResultItem = styled.div<{ selected?: boolean }>`
   }
 `;
 
-function AddBookSearchContainer(props: Omit<Props, "fetchBooks" | "fetchBookShelves" | "addBook">) {
-  const fetchBooks = async (query: { title: string; author: string }) => {
-    const title = query.title.split(" ").join("+");
-    const author = query.author.split(" ").join("+");
-    return await axios.get(`http://openlibrary.org/search.json?title=${title}&author=${author}`);
-  };
-
-  const fetchBookShelves = async () => {
-    return await axios.get("http://localhost:8000/bookshelves");
-  };
-
-  const addBook = async (query: APIBooksQuery) => {
-    return await axios.post("http://localhost:8000/books/", query);
-  };
-
-  return (
-    <AddBookSearch
-      fetchBooks={fetchBooks}
-      fetchBookShelves={fetchBookShelves}
-      addBook={addBook}
-      {...props}
-    />
-  );
-}
-
-export default AddBookSearchContainer;
+export default AddBookSearch;
