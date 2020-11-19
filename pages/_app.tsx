@@ -1,10 +1,11 @@
 import { createGlobalStyle } from "styled-components";
+import AuthProvider from "../components/AuthProvider";
 
 function MyApp({ Component, pageProps }) {
   return (
-    <>
+    <AuthProvider>
       <GlobalStyle /> <Component {...pageProps} />
-    </>
+    </AuthProvider>
   );
 }
 
