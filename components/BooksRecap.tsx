@@ -6,6 +6,8 @@ import AddBook from "./AddBook";
 import Axios from "axios";
 import useSWR, { mutate } from "swr";
 import AddBookshelf from "./AddBookshelf";
+import { AuthContext } from "../components/AuthProvider";
+import Bookshelf from "./Bookshelf";
 
 interface APIBooksResponse {
   data: {
@@ -19,38 +21,30 @@ interface APIBooksResponse {
   }[];
 }
 
-const populateBookshelves = async (bookshelves: { id: number; name: string }[]) => {
-  try {
-    const res = await Promise.all(
-      bookshelves.map(async (bookshelf) => {
-        const books = await Axios.get(`http://localhost:8000/books?bookshelf=${bookshelf.id}`);
-        return { books: books.data, name: bookshelf.name, id: bookshelf.id };
-      })
-    );
-    return res;
-  } catch (err) {
-    console.log(err);
-  }
-};
-const fetchBookshelves = async () => await Axios.get("http://localhost:8000/bookshelves");
+const fetchBookshelves = async (user: number) =>
+  await Axios.get(`http://localhost:8000/bookshelves?user=${user}`, {
+    headers: {
+      Authorization: `JWT ${typeof window !== "undefined" && localStorage.getItem("token")}`,
+    },
+  });
+
 const deleteBookshelf = async (id: number) =>
-  await Axios.delete(`http://localhost:8000/bookshelves/${id}/`);
+  await Axios.delete(`http://localhost:8000/bookshelves/${id}/`, {
+    headers: {
+      Authorization: `JWT ${typeof window !== "undefined" && localStorage.getItem("token")}`,
+    },
+  });
 
 export function BooksRecap() {
-  const [currentModal, setCurrentModal] = React.useState<"" | "addBook" | "addBookshelf">("");
-  const { data: bookshelves, error: bookshelvesError } = useSWR("/bookshelves", fetchBookshelves);
-  const bookshelvesList = bookshelves?.data.map((bookshelf) => ({
-    id: bookshelf.id,
-    name: bookshelf.name,
-  }));
+  const { user } = React.useContext(AuthContext);
 
-  const { data: populatedBookshelves, error: booksError } = useSWR(
-    bookshelvesList ? "/books" : null,
-    () => populateBookshelves(bookshelvesList)
+  const [currentModal, setCurrentModal] = React.useState<"" | "addBook" | "addBookshelf">("");
+  const { data: bookshelves, error: bookshelvesError } = useSWR(
+    user ? `/bookshelves?user=${user.id}` : null,
+    () => fetchBookshelves(user.id)
   );
 
-  const loading = !populatedBookshelves && !booksError && !bookshelvesError;
-
+  const loading = !bookshelves && !bookshelvesError;
   return (
     <Container>
       {currentModal && (
@@ -61,41 +55,22 @@ export function BooksRecap() {
       )}
       <Content>
         <Title>Your books</Title>
-        <Button onClick={() => setCurrentModal("addBook")}>Add book</Button>
+        {bookshelves?.data.length > 0 && (
+          <Button onClick={() => setCurrentModal("addBook")}>Add book</Button>
+        )}
         <Button onClick={() => setCurrentModal("addBookshelf")}>Add Bookshelf</Button>
         <div>
-          <h2>Recent</h2>
           {loading ? (
             <div>LOADING </div>
           ) : (
             <>
-              {populatedBookshelves.map((bookshelf) => (
-                <div key={bookshelf.id}>
-                  <h2>
-                    {bookshelf.name}{" "}
-                    <button
-                      onClick={() => {
-                        deleteBookshelf(bookshelf.id);
-                        mutate("/bookshelves");
-                      }}
-                    >
-                      DELETE
-                    </button>
-                  </h2>
-                  {bookshelf.books.map((book) => (
-                    <Group key={book.id}>
-                      <Card
-                        key={book.id}
-                        id={book.id}
-                        title={book.title}
-                        author={book.author}
-                        cover={`http://covers.openlibrary.org/b/id/${book.cover}-S.jpg`}
-                        rating={book.rating}
-                        readingStatus={book.reading_status}
-                      ></Card>{" "}
-                    </Group>
-                  ))}
-                </div>
+              {bookshelves.data.length === 0 && <div>You have no books yet.</div>}
+              {bookshelves.data.map((bookshelf) => (
+                <Bookshelf
+                  bookshelf={bookshelf}
+                  onDeleteBookshelf={deleteBookshelf}
+                  key={bookshelf.id}
+                ></Bookshelf>
               ))}
             </>
           )}

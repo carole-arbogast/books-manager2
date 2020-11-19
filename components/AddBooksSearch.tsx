@@ -3,6 +3,7 @@ import styled from "styled-components";
 import { Formik, Form, Field } from "formik";
 import axios from "axios";
 import useSWR, { mutate } from "swr";
+import { AuthContext } from "../components/AuthProvider";
 
 interface OLAPISearchResponse {
   data: {
@@ -44,22 +45,32 @@ const fetchBooks = async (query: { title: string; author: string }) => {
   return await axios.get(`http://openlibrary.org/search.json?title=${title}&author=${author}`);
 };
 
-const fetchBookShelves = async () => {
-  return await axios.get("http://localhost:8000/bookshelves");
+const fetchBookShelves = async (user) => {
+  return await axios.get(`http://localhost:8000/bookshelves?user=${user}`, {
+    headers: {
+      Authorization: `JWT ${typeof window !== "undefined" && localStorage.getItem("token")}`,
+    },
+  });
 };
 
 const addBook = async (query: APIBooksQuery) => {
-  return await axios.post("http://localhost:8000/books/", query);
+  return await axios.post("http://localhost:8000/books/", query, {
+    headers: {
+      Authorization: `JWT ${typeof window !== "undefined" && localStorage.getItem("token")}`,
+    },
+  });
 };
 
 export function AddBookSearch({ onClose }: Props) {
+  const { user } = React.useContext(AuthContext);
+
   const [searchResult, setSearchResult] = React.useState<OLAPIBook[]>([]);
   const [selectedBook, setSelectedBook] = React.useState<OLAPIBook>();
   const [currentStep, setCurrentStep] = React.useState<
     "loading" | "form" | "searchResults" | "final"
   >("form");
 
-  const { data: bookshelves, error } = useSWR("/bookshelves", fetchBookShelves);
+  const { data: bookshelves, error } = useSWR("/bookshelves", () => fetchBookShelves(user.id));
 
   const initialValues = { title: "", author: "" };
 
@@ -88,7 +99,8 @@ export function AddBookSearch({ onClose }: Props) {
         rating: values.rating,
         bookshelf: values.bookshelf,
       });
-      mutate("/books");
+
+      mutate(`/books?bookshelf=${values.bookshelf}`);
       onClose();
       return addedBook;
     }
@@ -142,7 +154,7 @@ export function AddBookSearch({ onClose }: Props) {
           No results <button onClick={() => setCurrentStep("form")}>Back</button>
         </div>
       ),
-    final: (
+    final: bookshelves && (
       <Formik initialValues={initialValuesRating} onSubmit={handleSubmitAddBook}>
         {({ values }) => (
           <Form>
@@ -164,7 +176,7 @@ export function AddBookSearch({ onClose }: Props) {
             <FieldGroup>
               <Field as="select" name="bookshelf">
                 {bookshelves.data.map((bookshelf) => (
-                  <option value={bookshelf.name} key={bookshelf.id}>
+                  <option value={bookshelf.id} key={bookshelf.id}>
                     {bookshelf.name}
                   </option>
                 ))}

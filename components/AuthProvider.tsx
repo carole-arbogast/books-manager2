@@ -27,7 +27,7 @@ function AuthProvider({ children }: Props) {
   const { data: user, error } = useSWR(isLoggedIn ? "/books_server/current_user" : null, fetchUser);
 
   return (
-    <AuthContext.Provider value={{ isLoggedIn, setIsLoggedIn, user }}>
+    <AuthContext.Provider value={{ isLoggedIn, setIsLoggedIn, user: user?.data }}>
       {children}
     </AuthContext.Provider>
   );

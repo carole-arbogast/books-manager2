@@ -8,14 +8,32 @@ import BoxModal from "../../components/BoxModal";
 import { Field, Form, Formik } from "formik";
 
 const fetchBookShelves = async () => {
-  return await Axios.get("http://localhost:8000/bookshelves");
+  return await Axios.get("http://localhost:8000/bookshelves", {
+    headers: {
+      Authorization: `JWT ${typeof window !== "undefined" && localStorage.getItem("token")}`,
+    },
+  });
 };
-const fetchBook = async (path: string) => await Axios.get(`http://localhost:8000${path}`);
+const fetchBook = async (path: string) =>
+  await Axios.get(`http://localhost:8000${path}`, {
+    headers: {
+      Authorization: `JWT ${typeof window !== "undefined" && localStorage.getItem("token")}`,
+    },
+  });
 
 const updateBook = async (id: string, query: Record<string, any>) =>
-  await Axios.patch(`http://localhost:8000/books/${id}/`, query);
+  await Axios.patch(`http://localhost:8000/books/${id}/`, query, {
+    headers: {
+      Authorization: `JWT ${typeof window !== "undefined" && localStorage.getItem("token")}`,
+    },
+  });
 
-const deleteBook = async (id: string) => await Axios.delete(`http://localhost:8000/books/${id}/`);
+const deleteBook = async (id: string) =>
+  await Axios.delete(`http://localhost:8000/books/${id}/`, {
+    headers: {
+      Authorization: `JWT ${typeof window !== "undefined" && localStorage.getItem("token")}`,
+    },
+  });
 
 export function Book() {
   const router = useRouter();
@@ -61,14 +79,14 @@ export function Book() {
           {modalOpen && (
             <BoxModal open={modalOpen} onClose={() => setModalOpen(false)}>
               <Formik
-                initialValues={{ bookshelf: book.bookshelf }}
+                initialValues={{ bookshelf: book.bookshelf.id }}
                 onSubmit={handleChangeBookshelf}
               >
                 {() => (
                   <Form>
                     <Field as="select" name="bookshelf">
                       {bookshelves.data.map((bookshelf) => (
-                        <option value={bookshelf.name} key={bookshelf.id}>
+                        <option value={bookshelf.id} key={bookshelf.id}>
                           {bookshelf.name}
                         </option>
                       ))}
@@ -83,7 +101,7 @@ export function Book() {
           <h2>{book.author}</h2>
           <img src={`http://covers.openlibrary.org/b/id/${book.cover}-M.jpg`} alt="cover"></img>
           <em>
-            {book.bookshelf} <button onClick={() => setModalOpen(true)}>Move</button>
+            {book.bookshelf.name} <button onClick={() => setModalOpen(true)}>Move</button>
           </em>
           <p>{book.description}</p>
           <p>
