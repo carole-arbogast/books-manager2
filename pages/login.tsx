@@ -4,18 +4,25 @@ import Axios from "axios";
 import { AuthContext } from "../components/AuthProvider";
 import Navbar from "../components/Navbar";
 import { useRouter } from "next/router";
+import { FieldGroup, FormWrapper, Button, Container } from "../components/layouts";
+import { APIQueryLogin } from "../index";
 
-const handleLogin = async (query) => Axios.post("http://localhost:8000/token-auth/", query);
+const handleLogin = async (query: APIQueryLogin) =>
+  Axios.post("http://localhost:8000/token-auth/", query);
 
 function Login() {
   const router = useRouter();
-  const { isLoggedIn, user } = React.useContext(AuthContext);
+  const { setIsLoggedIn } = React.useContext(AuthContext);
+  const [err, setErr] = React.useState("");
 
-  const handleSubmit = async (values) => {
+  const handleSubmit = async (values: APIQueryLogin) => {
     try {
-      await handleLogin(values);
+      const res = await handleLogin(values);
+      typeof window !== "undefined" && localStorage.setItem("token", res.data.token);
+      setIsLoggedIn(true);
       router.push("/");
     } catch (err) {
+      setErr(err);
       console.log(err);
     }
   };
@@ -24,18 +31,31 @@ function Login() {
   return (
     <>
       <Navbar />
-      <Formik initialValues={initialValues} onSubmit={handleSubmit}>
-        {() => (
-          <Form>
-            <label htmlFor="username">Username</label>
-            <Field type="text" name="username"></Field>
-            <label htmlFor="password">Pasword</label>
-            <Field type="text" name="password"></Field>
+      <Container>
+        <Formik initialValues={initialValues} onSubmit={handleSubmit}>
+          {() => (
+            <FormWrapper>
+              <Form>
+                <FieldGroup>
+                  <label htmlFor="username">Username</label>
+                  <Field type="text" name="username"></Field>
+                </FieldGroup>
+                <FieldGroup>
+                  <label htmlFor="password">Pasword</label>
+                  <Field type="text" name="password"></Field>
+                </FieldGroup>
 
-            <button type="submit">Submit</button>
-          </Form>
-        )}
-      </Formik>
+                <Button type="submit">Submit</Button>
+                {err && <div>Could not log in. Please check your credentials.</div>}
+
+                <div>
+                  No account yet? <a href="/register">Register</a>
+                </div>
+              </Form>
+            </FormWrapper>
+          )}
+        </Formik>
+      </Container>
     </>
   );
 }

@@ -2,15 +2,19 @@ import React from "react";
 import styled from "styled-components";
 import { Formik, Form, Field } from "formik";
 import { FieldGroup } from "./layouts";
-import axios from "axios";
+import axios, { AxiosResponse } from "axios";
 import { mutate } from "swr";
 import { AuthContext } from "../components/AuthProvider";
+import { Button } from "./layouts";
+import { APIQueryBookshelf, APIResBookshelf } from "..";
 
 interface Props {
   onClose: () => void;
 }
 
-const createBookshelf = async (query) => {
+const createBookshelf = async (
+  query: APIQueryBookshelf
+): Promise<AxiosResponse<APIResBookshelf>> => {
   return await axios.post("http://localhost:8000/bookshelves/", query, {
     headers: {
       Authorization: `JWT ${typeof window !== "undefined" && localStorage.getItem("token")}`,
@@ -21,7 +25,7 @@ const createBookshelf = async (query) => {
 export function AddBook({ onClose }: Props) {
   const { user } = React.useContext(AuthContext);
 
-  const handleSubmit = async (values) => {
+  const handleSubmit = async (values: APIQueryBookshelf) => {
     try {
       await createBookshelf({ name: values.name, user: user.id });
       mutate(`/bookshelves?user=${user.id}`);
@@ -45,7 +49,7 @@ export function AddBook({ onClose }: Props) {
               <Field type="text" name="name" />
             </FieldGroup>
 
-            <button type="submit">Add</button>
+            <Button type="submit">Add</Button>
           </Form>
         )}
       </Formik>

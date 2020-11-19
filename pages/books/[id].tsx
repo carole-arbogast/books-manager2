@@ -1,34 +1,36 @@
 import React from "react";
-import Axios from "axios";
+import Axios, { AxiosResponse } from "axios";
 import useSWR from "swr";
 import { useRouter } from "next/router";
 import Navbar from "../../components/Navbar";
 import styled from "styled-components";
 import BoxModal from "../../components/BoxModal";
 import { Field, Form, Formik } from "formik";
+import { Button } from "../../components/layouts";
+import { APIQueryBook, APIResBook, APIResBookshelf } from "../../index";
 
-const fetchBookShelves = async () => {
+const fetchBookShelves = async (): Promise<AxiosResponse<APIResBookshelf[]>> => {
   return await Axios.get("http://localhost:8000/bookshelves", {
     headers: {
       Authorization: `JWT ${typeof window !== "undefined" && localStorage.getItem("token")}`,
     },
   });
 };
-const fetchBook = async (path: string) =>
+const fetchBook = async (path: string): Promise<AxiosResponse<APIResBook>> =>
   await Axios.get(`http://localhost:8000${path}`, {
     headers: {
       Authorization: `JWT ${typeof window !== "undefined" && localStorage.getItem("token")}`,
     },
   });
 
-const updateBook = async (id: string, query: Record<string, any>) =>
+const updateBook = async (id: string, query: APIQueryBook): Promise<AxiosResponse<any>> =>
   await Axios.patch(`http://localhost:8000/books/${id}/`, query, {
     headers: {
       Authorization: `JWT ${typeof window !== "undefined" && localStorage.getItem("token")}`,
     },
   });
 
-const deleteBook = async (id: string) =>
+const deleteBook = async (id: number): Promise<AxiosResponse<any>> =>
   await Axios.delete(`http://localhost:8000/books/${id}/`, {
     headers: {
       Authorization: `JWT ${typeof window !== "undefined" && localStorage.getItem("token")}`,
@@ -38,30 +40,30 @@ const deleteBook = async (id: string) =>
 export function Book() {
   const router = useRouter();
 
-  const { data: res, error, mutate } = useSWR(
+  const { data: res, mutate } = useSWR(
     router.query.id ? `/books/${router.query.id}` : null,
     fetchBook
   );
 
-  const { data: bookshelves, error: bookshelvesError } = useSWR("/bookshelves", fetchBookShelves);
+  const { data: bookshelves } = useSWR("/bookshelves", fetchBookShelves);
 
   const [modalOpen, setModalOpen] = React.useState(false);
 
   const book = res?.data;
 
-  const readingStatusList = ["TO_READ", "READING", "READ"];
+  const reading_statusList = ["TO_READ", "READING", "READ"];
 
-  const handleChangeReadingStatus = async (status) => {
+  const handleChangereading_status = async (status) => {
     await updateBook(router.query.id as string, { reading_status: status });
     mutate();
   };
 
-  const handleDeleteBook = async (id: string) => {
+  const handleDeleteBook = async (id: number) => {
     await deleteBook(id);
     router.push("/");
   };
 
-  const handleChangeBookshelf = async (values) => {
+  const handleChangeBookshelf = async (values: APIQueryBook) => {
     try {
       await updateBook(router.query.id as string, { bookshelf: values.bookshelf });
       setModalOpen(false);
@@ -91,7 +93,7 @@ export function Book() {
                         </option>
                       ))}
                     </Field>
-                    <button type="submit">OK</button>
+                    <Button type="submit">OK</Button>
                   </Form>
                 )}
               </Formik>
@@ -101,16 +103,15 @@ export function Book() {
           <h2>{book.author}</h2>
           <img src={`http://covers.openlibrary.org/b/id/${book.cover}-M.jpg`} alt="cover"></img>
           <em>
-            {book.bookshelf.name} <button onClick={() => setModalOpen(true)}>Move</button>
+            {book.bookshelf.name} <Button onClick={() => setModalOpen(true)}>Move</Button>
           </em>
-          <p>{book.description}</p>
           <p>
             Status:{" "}
             <>
-              {readingStatusList.map((status) => (
+              {reading_statusList.map((status) => (
                 <StatusButton
                   key={status}
-                  onClick={() => handleChangeReadingStatus(status)}
+                  onClick={() => handleChangereading_status(status)}
                   selected={book.reading_status === status}
                 >
                   {status}
@@ -119,7 +120,7 @@ export function Book() {
             </>
           </p>
           <p>Your rating: {book.rating}/10</p>
-          <button onClick={() => handleDeleteBook(book.id)}>DELETE</button>
+          <Button onClick={() => handleDeleteBook(book.id)}>DELETE</Button>
         </>
       )}
     </>

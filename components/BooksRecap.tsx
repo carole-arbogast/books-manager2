@@ -1,34 +1,23 @@
 import React from "react";
 import styled from "styled-components";
-import Card from "./Card";
 import BoxModal from "./BoxModal";
 import AddBook from "./AddBook";
-import Axios from "axios";
-import useSWR, { mutate } from "swr";
+import Axios, { AxiosResponse } from "axios";
+import useSWR from "swr";
 import AddBookshelf from "./AddBookshelf";
 import { AuthContext } from "../components/AuthProvider";
 import Bookshelf from "./Bookshelf";
+import { Button } from "./layouts";
+import { APIResBookshelf } from "..";
 
-interface APIBooksResponse {
-  data: {
-    id: number;
-    title: string;
-    author: string;
-    cover: number;
-    reading_status: string;
-    bookshelves: string[];
-    rating?: number;
-  }[];
-}
-
-const fetchBookshelves = async (user: number) =>
+const fetchBookshelves = async (user: number): Promise<AxiosResponse<APIResBookshelf[]>> =>
   await Axios.get(`http://localhost:8000/bookshelves?user=${user}`, {
     headers: {
       Authorization: `JWT ${typeof window !== "undefined" && localStorage.getItem("token")}`,
     },
   });
 
-const deleteBookshelf = async (id: number) =>
+const deleteBookshelf = async (id: number): Promise<AxiosResponse<any>> =>
   await Axios.delete(`http://localhost:8000/bookshelves/${id}/`, {
     headers: {
       Authorization: `JWT ${typeof window !== "undefined" && localStorage.getItem("token")}`,
@@ -45,6 +34,7 @@ export function BooksRecap() {
   );
 
   const loading = !bookshelves && !bookshelvesError;
+
   return (
     <Container>
       {currentModal && (
@@ -56,15 +46,19 @@ export function BooksRecap() {
       <Content>
         <Title>Your books</Title>
         {bookshelves?.data.length > 0 && (
-          <Button onClick={() => setCurrentModal("addBook")}>Add book</Button>
+          <Button alignSelf="flex-end" onClick={() => setCurrentModal("addBook")}>
+            Add book
+          </Button>
         )}
-        <Button onClick={() => setCurrentModal("addBookshelf")}>Add Bookshelf</Button>
+        <Button alignSelf="flex-end" onClick={() => setCurrentModal("addBookshelf")}>
+          Add Bookshelf
+        </Button>
         <div>
           {loading ? (
             <div>LOADING </div>
           ) : (
             <>
-              {bookshelves.data.length === 0 && <div>You have no books yet.</div>}
+              {bookshelves.data.length === 0 && <InfoText>You have no books yet.</InfoText>}
               {bookshelves.data.map((bookshelf) => (
                 <Bookshelf
                   bookshelf={bookshelf}
@@ -94,13 +88,8 @@ const Title = styled.h1`
   text-align: center;
 `;
 
-const Button = styled.button`
-  align-self: flex-end;
-`;
-
-const Group = styled.div`
-  display: flex;
-  flex-wrap: wrap;
+const InfoText = styled.div`
+  margin: 1rem;
 `;
 
 export default BooksRecap;

@@ -1,5 +1,34 @@
 import React from "react";
 import styled from "styled-components";
+import { AuthContext } from "../components/AuthProvider";
+import { useRouter } from "next/router";
+import { Button } from "./layouts";
+
+export function Navbar() {
+  const router = useRouter();
+
+  const { isLoggedIn, setIsLoggedIn } = React.useContext(AuthContext);
+
+  const handleLogout = () => {
+    typeof window !== "undefined" && localStorage.removeItem("token");
+    setIsLoggedIn(false);
+    router.push("/login");
+  };
+  return (
+    <NavbarWrapper>
+      <NavbarContent>
+        <div>
+          <a href="/">BOOKS MANAGER</a>
+        </div>
+        {isLoggedIn && (
+          <div>
+            <Button onClick={handleLogout}>Log out</Button>
+          </div>
+        )}
+      </NavbarContent>
+    </NavbarWrapper>
+  );
+}
 
 const NavbarWrapper = styled.div`
   width: 100%;
@@ -14,17 +43,5 @@ const NavbarContent = styled.div`
   justify-content: center;
   align-items: center;
 `;
-
-export function Navbar() {
-  return (
-    <NavbarWrapper>
-      <NavbarContent>
-        <div>
-          <a href="/">BOOKS MANAGER</a>
-        </div>
-      </NavbarContent>
-    </NavbarWrapper>
-  );
-}
 
 export default Navbar;

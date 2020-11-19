@@ -1,9 +1,11 @@
 import React from "react";
 import styled from "styled-components";
-import Card from "./Card";
+import BookCard from "./BookCard";
 import useSWR, { mutate } from "swr";
-import Axios from "axios";
-import { AuthContext } from "../components/AuthProvider";
+import Axios, { AxiosResponse } from "axios";
+import { AuthContext } from "./AuthProvider";
+import { Button } from "./layouts";
+import { APIResBook } from "../index";
 
 interface APIBookshelf {
   id: number;
@@ -12,10 +14,10 @@ interface APIBookshelf {
 
 interface Props {
   bookshelf: APIBookshelf;
-  onDeleteBookshelf: (id: number) => Promise<object>;
+  onDeleteBookshelf: (id: number) => Promise<AxiosResponse<any>>;
 }
 
-const fetchBooks = async (id: number) =>
+const fetchBooks = async (id: number): Promise<AxiosResponse<APIResBook[]>> =>
   await Axios.get(`http://localhost:8000/books?bookshelf=${id}`, {
     headers: {
       Authorization: `JWT ${typeof window !== "undefined" && localStorage.getItem("token")}`,
@@ -25,7 +27,7 @@ const fetchBooks = async (id: number) =>
 export function Bookshelf({ bookshelf, onDeleteBookshelf }: Props) {
   const { user } = React.useContext(AuthContext);
 
-  const { data: books, error } = useSWR(bookshelf ? `/books?bookshelf=${bookshelf.id}` : null, () =>
+  const { data: books } = useSWR(bookshelf ? `/books?bookshelf=${bookshelf.id}` : null, () =>
     fetchBooks(bookshelf.id)
   );
 
@@ -33,7 +35,7 @@ export function Bookshelf({ bookshelf, onDeleteBookshelf }: Props) {
     <div>
       <h2>
         {bookshelf.name}
-        <button
+        <Button
           onClick={() => {
             onDeleteBookshelf(bookshelf.id);
             mutate(`/books?bookshelf=${bookshelf.id}`);
@@ -41,21 +43,13 @@ export function Bookshelf({ bookshelf, onDeleteBookshelf }: Props) {
           }}
         >
           DELETE
-        </button>
+        </Button>
       </h2>
-      {books?.data?.map((book) => (
-        <Group key={book.id}>
-          <Card
-            key={book.id}
-            id={book.id}
-            title={book.title}
-            author={book.author}
-            cover={`http://covers.openlibrary.org/b/id/${book.cover}-S.jpg`}
-            rating={book.rating}
-            readingStatus={book.reading_status}
-          ></Card>
-        </Group>
-      ))}
+      <Group>
+        {books?.data?.map((book) => (
+          <BookCard key={book.id} book={book}></BookCard>
+        ))}
+      </Group>
     </div>
   );
 }
@@ -63,6 +57,7 @@ export function Bookshelf({ bookshelf, onDeleteBookshelf }: Props) {
 const Group = styled.div`
   display: flex;
   flex-wrap: wrap;
+  width: 100%;
 `;
 
 export default Bookshelf;

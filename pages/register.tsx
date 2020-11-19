@@ -1,19 +1,20 @@
 import React from "react";
 import { Formik, Form, Field } from "formik";
-import Axios from "axios";
+import Axios, { AxiosResponse } from "axios";
 import Navbar from "../components/Navbar";
+import { AuthContext } from "../components/AuthProvider";
+import { FieldGroup, FormWrapper, Button } from "../components/layouts";
+import { APIQueryRegister, APIResRegister } from "../index";
 
-const handleRegister = async (query) => Axios.post("http://localhost:8000/users/", query);
+const handleRegister = async (query: APIQueryRegister) =>
+  Axios.post("http://localhost:8000/users/", query);
 
 function Register() {
-  const [isLoggedIn, setIsLoggedIn] = React.useState(
-    typeof window !== "undefined" && Boolean(localStorage.getItem("token"))
-  );
+  const { setIsLoggedIn } = React.useContext(AuthContext);
 
-  const handleSubmit = async (values) => {
+  const handleSubmit = async (values: APIQueryRegister) => {
     try {
-      const res = await handleRegister(values);
-      console.log(res);
+      const res: AxiosResponse<APIResRegister> = await handleRegister(values);
       localStorage.setItem("token", res.data.token);
       setIsLoggedIn(true);
     } catch (err) {
@@ -27,16 +28,26 @@ function Register() {
       <Navbar />
       <Formik initialValues={initialValues} onSubmit={handleSubmit}>
         {() => (
-          <Form>
-            <label htmlFor="username">Username</label>
-            <Field type="text" name="username"></Field>
-            <label htmlFor="email">Email</label>
-            <Field type="text" name="email"></Field>
-            <label htmlFor="password">Pasword</label>
-            <Field type="text" name="password"></Field>
+          <FormWrapper>
+            <Form>
+              <FieldGroup>
+                <label htmlFor="username">Username</label>
+                <Field type="text" name="username"></Field>
+              </FieldGroup>
 
-            <button type="submit">Submit</button>
-          </Form>
+              <FieldGroup>
+                <label htmlFor="email">Email</label>
+                <Field type="text" name="email"></Field>
+              </FieldGroup>
+
+              <FieldGroup>
+                <label htmlFor="password">Pasword</label>
+                <Field type="text" name="password"></Field>
+              </FieldGroup>
+
+              <Button type="submit">Submit</Button>
+            </Form>
+          </FormWrapper>
         )}
       </Formik>
     </>
