@@ -188,10 +188,6 @@ export function Book() {
   );
 }
 
-const StatusButton = styled.button<{ selected?: boolean }>`
-  background: ${(props) => (props.selected ? "lightblue" : "transparent")};
-`;
-
 const Container = styled.div`
   display: flex;
   justify-content: center;
