@@ -6,8 +6,10 @@ import Navbar from "../../components/Navbar";
 import styled from "styled-components";
 import BoxModal from "../../components/BoxModal";
 import { Field, Form, Formik } from "formik";
-import { Button } from "../../components/layouts";
+import { Button, FieldGroup, FlexWrapper, IconButton } from "../../components/layouts";
 import { APIQueryBook, APIResBook, APIResBookshelf } from "../../index";
+import { faEdit } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
 const fetchBookShelves = async (): Promise<AxiosResponse<APIResBookshelf[]>> => {
   return await Axios.get("http://localhost:8000/bookshelves", {
@@ -47,7 +49,7 @@ export function Book() {
 
   const { data: bookshelves } = useSWR("/bookshelves", fetchBookShelves);
 
-  const [modalOpen, setModalOpen] = React.useState(false);
+  const [openModal, setOpenModal] = React.useState<"" | "rating" | "bookshelf">("");
 
   const book = res?.data;
 
@@ -66,7 +68,17 @@ export function Book() {
   const handleChangeBookshelf = async (values: APIQueryBook) => {
     try {
       await updateBook(router.query.id as string, { bookshelf: values.bookshelf });
-      setModalOpen(false);
+      setOpenModal("");
+      mutate();
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
+  const handleChangeRating = async (values: APIQueryBook) => {
+    try {
+      await updateBook(router.query.id as string, { rating: values.rating });
+      setOpenModal("");
       mutate();
     } catch (err) {
       console.log(err);
@@ -77,51 +89,100 @@ export function Book() {
     <>
       <Navbar />
       {book && bookshelves && (
-        <>
-          {modalOpen && (
-            <BoxModal open={modalOpen} onClose={() => setModalOpen(false)}>
-              <Formik
-                initialValues={{ bookshelf: book.bookshelf.id }}
-                onSubmit={handleChangeBookshelf}
-              >
-                {() => (
-                  <Form>
-                    <Field as="select" name="bookshelf">
-                      {bookshelves.data.map((bookshelf) => (
-                        <option value={bookshelf.id} key={bookshelf.id}>
-                          {bookshelf.name}
-                        </option>
-                      ))}
-                    </Field>
-                    <Button type="submit">OK</Button>
-                  </Form>
-                )}
-              </Formik>
+        <Container>
+          {openModal && (
+            <BoxModal open={true} onClose={() => setOpenModal("")}>
+              {openModal === "rating" && (
+                <Formik initialValues={{ rating: book.rating }} onSubmit={handleChangeRating}>
+                  {() => (
+                    <Form>
+                      <FieldGroup>
+                        <label htmlFor="rating">Your Rating</label>
+                        <Field type="number" name="rating" min={1} max={10}></Field>
+                      </FieldGroup>
+
+                      <FlexWrapper justify="flex-end">
+                        <Button type="submit">OK</Button>
+                      </FlexWrapper>
+                    </Form>
+                  )}
+                </Formik>
+              )}
+              {openModal === "bookshelf" && (
+                <Formik
+                  initialValues={{ bookshelf: book.bookshelf.id }}
+                  onSubmit={handleChangeBookshelf}
+                >
+                  {() => (
+                    <Form>
+                      <FieldGroup>
+                        <label htmlFor="bookshelf">Bookshelf</label>
+                        <Field as="select" name="bookshelf">
+                          {bookshelves.data.map((bookshelf) => (
+                            <option value={bookshelf.id} key={bookshelf.id}>
+                              {bookshelf.name}
+                            </option>
+                          ))}
+                        </Field>
+                      </FieldGroup>
+                      <FlexWrapper justify="flex-end">
+                        <Button type="submit">OK</Button>
+                      </FlexWrapper>
+                    </Form>
+                  )}
+                </Formik>
+              )}
             </BoxModal>
           )}
           <h1>{book.title}</h1>
-          <h2>{book.author}</h2>
-          <img src={`http://covers.openlibrary.org/b/id/${book.cover}-M.jpg`} alt="cover"></img>
-          <em>
-            {book.bookshelf.name} <Button onClick={() => setModalOpen(true)}>Move</Button>
-          </em>
-          <p>
-            Status:{" "}
-            <>
-              {reading_statusList.map((status) => (
-                <StatusButton
-                  key={status}
-                  onClick={() => handleChangereading_status(status)}
-                  selected={book.reading_status === status}
-                >
-                  {status}
-                </StatusButton>
-              ))}
-            </>
-          </p>
-          <p>Your rating: {book.rating}/10</p>
-          <Button onClick={() => handleDeleteBook(book.id)}>DELETE</Button>
-        </>
+          <FlexWrapper justify="space-around">
+            <div>
+              <h2>{book.author}</h2>
+              <Content>
+                <Cover
+                  src={`http://covers.openlibrary.org/b/id/${book.cover}-M.jpg`}
+                  alt="cover"
+                ></Cover>
+              </Content>
+            </div>
+
+            <div>
+              Bookshelf: <em>{book.bookshelf.name} </em>
+              <IconButton onClick={() => setOpenModal("bookshelf")}>
+                <FontAwesomeIcon icon={faEdit}></FontAwesomeIcon>
+              </IconButton>
+              <p>
+                Status:{" "}
+                <>
+                  {reading_statusList.map((status) => (
+                    <Button
+                      selected={book.reading_status === status}
+                      margin="0 0.25rem"
+                      key={status}
+                      onClick={() => handleChangereading_status(status)}
+                    >
+                      {status}
+                    </Button>
+                    // <StatusButton
+                    //   key={status}
+                    //   onClick={() => handleChangereading_status(status)}
+                    //   selected={book.reading_status === status}
+                    // >
+                    //   {status}
+                    // </StatusButton>
+                  ))}
+                </>
+              </p>
+              <p>
+                Your rating: {book.rating}/10{" "}
+                <IconButton onClick={() => setOpenModal("rating")}>
+                  <FontAwesomeIcon icon={faEdit}></FontAwesomeIcon>
+                </IconButton>
+              </p>
+              <Button onClick={() => handleDeleteBook(book.id)}>DELETE</Button>
+            </div>
+          </FlexWrapper>
+        </Container>
       )}
     </>
   );
@@ -129,6 +190,22 @@ export function Book() {
 
 const StatusButton = styled.button<{ selected?: boolean }>`
   background: ${(props) => (props.selected ? "lightblue" : "transparent")};
+`;
+
+const Container = styled.div`
+  display: flex;
+  justify-content: center;
+  flex-direction: column;
+  width: 90%;
+  margin: auto;
+`;
+
+const Cover = styled.img`
+  width: 12em;
+`;
+
+const Content = styled.div`
+  margin: 1rem;
 `;
 
 export default Book;

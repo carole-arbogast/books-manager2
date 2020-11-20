@@ -45,14 +45,21 @@ export function BooksRecap() {
       )}
       <Content>
         <Title>Your books</Title>
-        {bookshelves?.data.length > 0 && (
-          <Button alignSelf="flex-end" onClick={() => setCurrentModal("addBook")}>
-            Add book
+        <ButtonWrapper>
+          {bookshelves?.data.length > 0 && (
+            <Button margin="0.5rem" alignSelf="flex-end" onClick={() => setCurrentModal("addBook")}>
+              Add book
+            </Button>
+          )}
+          <Button
+            margin="0.5rem"
+            alignSelf="flex-end"
+            onClick={() => setCurrentModal("addBookshelf")}
+          >
+            Add Bookshelf
           </Button>
-        )}
-        <Button alignSelf="flex-end" onClick={() => setCurrentModal("addBookshelf")}>
-          Add Bookshelf
-        </Button>
+        </ButtonWrapper>
+
         <div>
           {loading ? (
             <div>LOADING </div>
@@ -82,6 +89,7 @@ const Container = styled.div`
 const Content = styled.div`
   display: flex;
   flex-direction: column;
+  width: 80%;
 `;
 
 const Title = styled.h1`
@@ -90,6 +98,11 @@ const Title = styled.h1`
 
 const InfoText = styled.div`
   margin: 1rem;
+`;
+
+const ButtonWrapper = styled.div`
+  display: flex;
+  align-self: flex-end;
 `;
 
 export default BooksRecap;

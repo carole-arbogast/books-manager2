@@ -18,11 +18,7 @@ export function BookCard({ book }: Props) {
         {book.rating && <div>Your rating: {book.rating}/10</div>}
       </Info>
       <Cover
-        src={
-          `http://covers.openlibrary.org/b/id/${book.cover}-S.jpg` ||
-          // FIXME find placeholder
-          "https://images-na.ssl-images-amazon.com/images/I/914CT7iyyvL.jpg"
-        }
+        src={`http://covers.openlibrary.org/b/id/${book.cover}-S.jpg`}
         placeholder="book-cover"
       ></Cover>
     </CardWrapper>

@@ -4,7 +4,7 @@ import { Formik, Form, Field } from "formik";
 import axios, { AxiosResponse } from "axios";
 import useSWR, { mutate } from "swr";
 import { AuthContext } from "../components/AuthProvider";
-import { Button } from "./layouts";
+import { Button, FlexWrapper } from "./layouts";
 import {
   OPLIBBook,
   OPLIBSearchQuery,
@@ -98,8 +98,9 @@ export function AddBookSearch({ onClose }: Props) {
               <label htmlFor="author">Author</label>
               <Field type="text" name="author" />
             </FieldGroup>
-
-            <Button type="submit">Search</Button>
+            <FlexWrapper justify="flex-end">
+              <Button type="submit">Search</Button>
+            </FlexWrapper>
           </Form>
         )}
       </Formik>
@@ -121,7 +122,9 @@ export function AddBookSearch({ onClose }: Props) {
               </SearchResultItem>
             ))}
           </SearchResults>
-          <Button onClick={() => setCurrentStep("final")}>NEXT</Button>
+          <FlexWrapper justify="flex-end">
+            <Button onClick={() => setCurrentStep("final")}>NEXT</Button>
+          </FlexWrapper>
         </>
       ) : (
         <div>
@@ -142,19 +145,25 @@ export function AddBookSearch({ onClose }: Props) {
             </FieldGroup>
             {values.reading_status === "READ" && (
               <FieldGroup>
-                <Field as="select" name="bookshelf">
-                  {bookshelves.data.map((bookshelf) => (
-                    <option value={bookshelf.id} key={bookshelf.id}>
-                      {bookshelf.name}
-                    </option>
-                  ))}
-                </Field>
+                <label htmlFor="rating">Your rating</label>
+                <Field type="number" name="rating" />
               </FieldGroup>
             )}
-            <label htmlFor="rating">Your rating</label>
-            <Field type="number" name="rating" />
 
-            <Button type="submit">ADD</Button>
+            <FieldGroup>
+              <label htmlFor="bookshelf">Bookshelf</label>
+              <Field as="select" name="bookshelf">
+                {bookshelves.data.map((bookshelf) => (
+                  <option value={bookshelf.id} key={bookshelf.id}>
+                    {bookshelf.name}
+                  </option>
+                ))}
+              </Field>
+            </FieldGroup>
+
+            <FlexWrapper justify="flex-end">
+              <Button type="submit">ADD</Button>
+            </FlexWrapper>
           </Form>
         )}
       </Formik>

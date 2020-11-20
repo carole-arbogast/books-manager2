@@ -4,8 +4,10 @@ import BookCard from "./BookCard";
 import useSWR, { mutate } from "swr";
 import Axios, { AxiosResponse } from "axios";
 import { AuthContext } from "./AuthProvider";
-import { Button } from "./layouts";
+import { IconButton } from "./layouts";
 import { APIResBook } from "../index";
+import { faTrashAlt } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
 interface APIBookshelf {
   id: number;
@@ -35,17 +37,18 @@ export function Bookshelf({ bookshelf, onDeleteBookshelf }: Props) {
     <div>
       <h2>
         {bookshelf.name}
-        <Button
+        <IconButton
           onClick={() => {
             onDeleteBookshelf(bookshelf.id);
             mutate(`/books?bookshelf=${bookshelf.id}`);
             mutate(`/bookshelves?user=${user.id}`);
           }}
         >
-          DELETE
-        </Button>
+          <FontAwesomeIcon icon={faTrashAlt}></FontAwesomeIcon>
+        </IconButton>
       </h2>
       <Group>
+        {books?.data.length === 0 && <div>This bookshelf is empty.</div>}
         {books?.data?.map((book) => (
           <BookCard key={book.id} book={book}></BookCard>
         ))}

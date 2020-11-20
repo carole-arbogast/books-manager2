@@ -44,6 +44,7 @@ const ModalBox = styled.div`
   display: flex;
   flex-direction: column;
   cursor: default;
+  min-width: 15em;
 `;
 
 const Cross = styled.span`
